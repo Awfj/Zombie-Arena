@@ -5,11 +5,14 @@
 #include <SFML/Graphics.hpp>
 #include "Player.h"
 #include "ZombieArena.h"
+#include "TextureHolder.h"
 
 using namespace sf;
 
 int main()
 {
+    TextureHolder holder;
+
     enum class State { PAUSED, LEVELING_UP, 
         GAME_OVER, PLAYING };
     State state = State::GAME_OVER;
@@ -33,8 +36,13 @@ int main()
     IntRect arena;
 
     VertexArray background;
-    Texture textureBackground;
-    textureBackground.loadFromFile("graphics/background_sheet.png");
+    Texture textureBackground = TextureHolder::GetTexture(
+        "graphics/background_sheet.png"
+    );
+
+    int numZombies;
+    int numZombiesAlive;
+    Zombie* zombies = nullptr;
 
     while (window.isOpen()) {
         Event event;
@@ -124,6 +132,12 @@ int main()
 
                 //int tileSize = 50;
                 player.spawn(arena, resolution, tileSize);
+
+                numZombies = 10;
+                delete[] zombies;
+                zombies = createHorde(numZombies, arena);
+                numZombiesAlive = numZombies;
+
                 clock.restart();
             }
         }
@@ -141,12 +155,21 @@ int main()
             Vector2f playerPosition(player.getCenter());
 
             mainView.setCenter(player.getCenter());
+
+            for (int i = 0; i < numZombies; i++) {
+                if (zombies[i].isAlive()) {
+                    zombies[i].update(dt.asSeconds(), playerPosition);
+                }
+            }
         }
 
         if (state == State::PLAYING) {
             window.clear();
             window.setView(mainView);
             window.draw(background, &textureBackground);
+            for (int i = 0; i < numZombies; i++) {
+                window.draw(zombies[i].getSprite());
+            }
             window.draw(player.getSprite());
         }
 
@@ -162,6 +185,7 @@ int main()
 
         window.display();
     }
+    delete[] zombies;
 
     return 0;
 }
