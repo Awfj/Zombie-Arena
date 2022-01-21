@@ -6,6 +6,7 @@
 #include "Player.h"
 #include "ZombieArena.h"
 #include "TextureHolder.h"
+#include "Bullet.h"
 
 using namespace sf;
 
@@ -44,6 +45,14 @@ int main()
     int numZombiesAlive;
     Zombie* zombies = nullptr;
 
+    Bullet bullets[100];
+    int currentBullet = 0;
+    int bulletsSpare = 24;
+    int bulletsInClip = 6;
+    int clipSize = 6;
+    float fireRate = 1;
+    Time lastPressed;
+
     while (window.isOpen()) {
         Event event;
         while (window.pollEvent(event)) {
@@ -63,7 +72,19 @@ int main()
                 }
 
                 if (state == State::PLAYING) {
+                    if (event.key.code == Keyboard::R) {
+                        if (bulletsSpare >= clipSize) {
+                            bulletsInClip = clipSize;
+                            bulletsSpare -= clipSize;
+                        }
+                        else if (bulletsSpare > 0) {
+                            bulletsInClip = bulletsSpare;
+                            bulletsSpare = 0;
+                        }
+                        else {
 
+                        }
+                    }                    
                 }
             }
         }
@@ -99,6 +120,25 @@ int main()
             }
             else {
                 player.stopRight();
+            }
+
+            if (Mouse::isButtonPressed(sf::Mouse::Left)) {
+                if (gameTimeTotal.asMilliseconds()
+                    - lastPressed.asMilliseconds()
+                    > 1000 / fireRate && bulletsInClip > 0) {
+                    bullets[currentBullet].shoot(
+                        player.getCenter().x, player.getCenter().y,
+                        mouseWorldPosition.x, mouseWorldPosition.y
+                    );
+
+                    currentBullet++;
+                    if (currentBullet > 99) {
+                        currentBullet = 0;
+                    }
+
+                    lastPressed = gameTimeTotal;
+                    bulletsInClip--;
+                }
             }
         }
 
