@@ -7,6 +7,7 @@
 #include "ZombieArena.h"
 #include "TextureHolder.h"
 #include "Bullet.h"
+#include "Pickup.h"
 
 using namespace sf;
 
@@ -52,6 +53,20 @@ int main()
     int clipSize = 6;
     float fireRate = 1;
     Time lastPressed;
+
+    window.setMouseCursorVisible(true);
+    Sprite spriteCrosshair;
+    Texture textureCrosshair = TextureHolder::GetTexture(
+        "graphics/crosshair.png"
+    );
+    spriteCrosshair.setTexture(textureCrosshair);
+    spriteCrosshair.setOrigin(25, 25);
+
+    Pickup healthPickup(1);
+    Pickup ammoPickup(2);
+
+    int score = 0;
+    int hiScore = 0;
 
     while (window.isOpen()) {
         Event event;
@@ -173,6 +188,9 @@ int main()
                 //int tileSize = 50;
                 player.spawn(arena, resolution, tileSize);
 
+                healthPickup.setArena(arena);
+                ammoPickup.setArena(arena);
+
                 numZombies = 10;
                 delete[] zombies;
                 zombies = createHorde(numZombies, arena);
@@ -191,6 +209,8 @@ int main()
             mouseWorldPosition = window.mapPixelToCoords(
                 Mouse::getPosition(), mainView);
 
+            spriteCrosshair.setPosition(mouseWorldPosition);
+
             player.update(dtAsSeconds, Mouse::getPosition());
             Vector2f playerPosition(player.getCenter());
 
@@ -199,6 +219,38 @@ int main()
             for (int i = 0; i < numZombies; i++) {
                 if (zombies[i].isAlive()) {
                     zombies[i].update(dt.asSeconds(), playerPosition);
+                }
+            }
+
+            for (int i = 0; i < 100; i++) {
+                if (bullets[i].isInFlight()) {
+                    bullets[i].update(dtAsSeconds);
+                }
+            }
+
+            healthPickup.update(dtAsSeconds);
+            ammoPickup.update(dtAsSeconds);
+
+            for (int i = 0; i < 100; i++) {
+                for (int j = 0; j < numZombies; j++) {
+                    if (bullets[i].isInFlight() &&
+                        zombies[j].isAlive()) {
+                        if (bullets[i].getPosition().intersects(
+                            zombies[j].getPosition()
+                        )) {
+                            bullets[i].stop();
+                            if (zombies[j].hit()) {
+                                score += 10;
+                                if (score >= hiScore) {
+                                    hiScore = score;
+                                }
+                                numZombiesAlive--;
+                                if (numZombiesAlive == 0) {
+                                    state = State::LEVELING_UP;
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -210,7 +262,19 @@ int main()
             for (int i = 0; i < numZombies; i++) {
                 window.draw(zombies[i].getSprite());
             }
+            for (int i = 0; i < 100; i++) {
+                if (bullets[i].isInFlight()) {
+                    window.draw(bullets[i].getShape());
+                }
+            }
             window.draw(player.getSprite());
+            if (ammoPickup.isSpawned()) {
+                window.draw(ammoPickup.getSprite());
+            }
+            if (healthPickup.isSpawned()) {
+                window.draw(healthPickup.getSprite());
+            }
+            window.draw(spriteCrosshair);
         }
 
         if (state == State::LEVELING_UP) {
