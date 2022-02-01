@@ -253,6 +253,26 @@ int main()
                     }
                 }
             }
+            for (int i = 0l; i < numZombies; i++) {
+                if (player.getPosition().intersects(
+                    zombies[i].getPosition()) && zombies[i].isAlive()) {
+                    if (player.hit(gameTimeTotal)) {
+
+                    }
+                    if (player.getHealth() <= 0) {
+                        state = State::GAME_OVER;
+                    }
+                }
+            }
+            if (player.getPosition().intersects(
+                healthPickup.getPosition()) && healthPickup.isSpawned()) {
+                player.increaseHealthLevel(healthPickup.gotIt());
+            }
+            if (player.getPosition().intersects(
+                ammoPickup.getPosition()) && ammoPickup.isSpawned()
+                ) {
+                bulletsSpare += ammoPickup.gotIt();
+            }
         }
 
         if (state == State::PLAYING) {
